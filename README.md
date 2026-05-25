@@ -6,6 +6,10 @@ It acts like a real DJ: it chooses music, speaks on air, bridges between songs, 
 
 Claudio is not a playlist generator or a chatbot that waits for commands. Open it, press play, and it begins programming a small radio show for you. It reads the hour, remembers your recent listening, follows your music taste, and turns each DJ line into spoken audio before the next song comes in.
 
+## Preview
+
+![Claudio FM preview](assets/claudio-fm-preview.png)
+
 ## What It Feels Like
 
 Claudio is for moments when you do not want to build a playlist.
