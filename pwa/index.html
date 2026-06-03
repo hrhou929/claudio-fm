@@ -611,24 +611,24 @@ html, body {
   display: none;
 }
 [data-skin="radio"] .body {
+  flex-direction: row;
   height: 100%;
   margin-top: 0;
   border-radius: 0;
   background: transparent;
 }
-[data-skin="radio"] .meta,
-[data-skin="radio"] .transcript-wrap,
 [data-skin="radio"] .player {
   display: none;
 }
 [data-skin="radio"] .radio-home {
-  display: grid;
-  flex: 1 1 auto;
-  min-height: 0;
-  place-items: center;
-  align-content: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 0;
+  min-width: 0;
   gap: 6px;
-  padding: clamp(18px, 6vmin, 48px);
+  padding: clamp(12px, 4vmin, 40px);
 }
 .radio-player {
   width: min(100%, 680px);
@@ -716,6 +716,173 @@ html, body {
   background: rgb(31,36,40);
   color: rgb(255,255,255);
 }
+/* ── Radio info panel: transparent wrapper in non-radio skins ── */
+.radio-info-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.radio-divider,
+.radio-info-header {
+  display: none;
+}
+
+/* ── Radio skin: split layout ──────────────────────────────── */
+[data-skin="radio"] .radio-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 28px;
+  align-self: stretch;
+  position: relative;
+  z-index: 1;
+}
+[data-skin="radio"] .radio-divider::before {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; left: 50%;
+  width: 1px;
+  background: rgba(31,36,40,.10);
+  transform: translateX(-50%);
+  transition: opacity .25s;
+}
+[data-skin="radio"].radio-info-closed .radio-divider::before {
+  opacity: 0;
+}
+.radio-info-toggle {
+  position: relative; z-index: 1;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgb(255,255,255);
+  border: 1px solid rgba(31,36,40,.12);
+  box-shadow: rgba(18,26,36,.12) 0 2px 8px;
+  cursor: pointer;
+  display: grid; place-items: center;
+  transition: transform .15s, background .15s;
+  padding: 0; color: rgb(31,36,40);
+}
+.radio-info-toggle:hover { transform: scale(1.1); background: rgb(255,255,255); box-shadow: rgba(18,26,36,.18) 0 4px 12px; }
+.radio-info-toggle svg { width: 12px; height: 12px; transition: transform .3s cubic-bezier(.4,0,.2,1); }
+[data-skin="radio"].radio-info-closed .radio-info-toggle svg { transform: rotate(180deg); }
+
+[data-skin="radio"] .radio-info-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 min(40%, 380px);
+  min-width: 0;
+  overflow: hidden;
+  padding: clamp(16px, 3vmin, 32px) clamp(16px, 3vmin, 32px) clamp(16px, 3vmin, 32px) clamp(10px, 2vmin, 20px);
+  transition: flex-basis .35s cubic-bezier(.4,0,.2,1), opacity .25s, padding .35s;
+}
+[data-skin="radio"].radio-info-closed .radio-info-panel {
+  flex: 0 0 0;
+  opacity: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+[data-skin="radio"] .radio-info-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+.radio-info-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgb(255,43,59);
+  box-shadow: rgba(255,43,59,.5) 0 0 6px;
+  animation: 1.2s ease-in-out 0s infinite pulse;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity .3s;
+}
+.radio-info-dot.live { opacity: 1; }
+.radio-info-label {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: rgba(31,36,40,.40);
+}
+
+[data-skin="radio"] .meta {
+  display: flex;
+  padding: 0 0 16px;
+  flex-shrink: 0;
+}
+[data-skin="radio"] .session-title { color: rgba(31,36,40,.42); }
+[data-skin="radio"] .meta-name {
+  font-size: clamp(18px, 2.8vmin, 26px);
+  color: rgb(23,28,32);
+}
+[data-skin="radio"] .meta-sub { color: rgba(23,28,32,.52); }
+[data-skin="radio"] .meta-source { color: rgba(23,28,32,.38); }
+[data-skin="radio"] .meta-source:hover { color: rgb(23,28,32); }
+
+[data-skin="radio"] .transcript-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  background: rgba(255,255,255,.55);
+  border: 1px solid rgba(31,36,40,.07);
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+}
+[data-skin="radio"] .transcript-fade {
+  background: linear-gradient(rgba(255,255,255,0) 0%, rgba(255,255,255,.88) 100%);
+}
+[data-skin="radio"] .turn-head { color: rgba(23,28,32,.42); }
+[data-skin="radio"] .turn-head .who { color: rgba(23,28,32,.60); }
+[data-skin="radio"] .turn.active .turn-head { color: rgba(23,28,32,.58); }
+[data-skin="radio"] .turn.active .turn-head .who { color: rgb(23,28,32); }
+[data-skin="radio"] .turn-body { color: rgb(23,28,32); }
+[data-skin="radio"] .word.said { color: rgb(23,28,32); }
+[data-skin="radio"] .word.current {
+  color: rgb(10,95,55);
+  background: rgba(0,190,110,.13);
+  box-shadow: rgba(0,190,110,.22) 0 0 0 1px;
+}
+[data-skin="radio"] .word.future { color: rgba(23,28,32,.30); }
+
+@media (max-width: 768px) {
+  [data-skin="radio"] .body { flex-direction: column; }
+  [data-skin="radio"] .radio-home {
+    flex: 0 0 auto;
+    padding: 14px 12px 6px;
+  }
+  [data-skin="radio"] .radio-divider {
+    flex: 0 0 28px;
+    flex-direction: row;
+    align-self: auto;
+  }
+  [data-skin="radio"] .radio-divider::before {
+    top: 50%; bottom: auto;
+    left: 0; right: 0;
+    width: 100%; height: 1px;
+    transform: translateY(-50%);
+  }
+  [data-skin="radio"] .radio-info-panel {
+    flex: 0 1 auto;
+    max-height: 340px;
+    width: 100% !important;
+    padding: 12px 16px 16px;
+    overflow-y: auto;
+    transition: max-height .35s cubic-bezier(.4,0,.2,1), opacity .25s, padding .3s;
+  }
+  [data-skin="radio"].radio-info-closed .radio-info-panel {
+    max-height: 0;
+    flex: 0 0 0;
+    overflow: hidden;
+    padding: 0;
+  }
+  [data-skin="radio"] .radio-info-header { margin-bottom: 12px; }
+  [data-skin="radio"] .meta { padding-bottom: 10px; }
+  [data-skin="radio"] .transcript-wrap { min-height: 140px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .radio-player { transition: none; }
 }
@@ -727,10 +894,10 @@ html, body {
   }
   [data-skin="radio"] .body { border-radius: 0; }
   [data-skin="radio"] .radio-home {
-    padding: 18px 12px 56px;
+    padding: 12px 12px 4px;
   }
   .radio-player {
-    width: min(100%, 520px);
+    width: min(100%, 480px);
   }
   .radio-caption {
     min-height: 44px;
@@ -782,43 +949,59 @@ html, body {
         </div>
       </section>
 
-      <!-- Meta -->
-      <div class="meta">
-        <div class="session-title" id="sessionTitle"></div>
-        <div class="meta-name" id="metaName">Your private<br>radio station</div>
-        <div class="meta-sub">
-          <span id="metaSub">Waiting for Claudio…</span>
-          <span class="meta-source" id="metaSource" style="display:none">
-            <svg width="11" height="11" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
-              <path d="M11.2 1.8v6.9c0 1.4-1 2.4-2.3 2.4-1.2 0-2.1-.8-2.1-1.9 0-1.1 1-1.9 2.1-1.9.4 0 .8.1 1.1.3V3.9L5.9 5.2v5.1c0 1.4-1 2.4-2.3 2.4-1.2 0-2.1-.8-2.1-1.9 0-1.1 1-1.9 2.1-1.9.4 0 .8.1 1.1.3V2.6l6.5-.8z"/>
-            </svg>
-            <span id="metaSourceText"></span>
-            <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M3 2h5v5"/><path d="M8 2L2.5 7.5"/>
-            </svg>
-          </span>
-        </div>
-      </div><!-- .meta -->
+      <!-- Divider with toggle (only visible in radio skin) -->
+      <div class="radio-divider" id="radioDivider">
+        <button class="radio-info-toggle" id="radioInfoToggle" type="button" aria-label="Hide info panel">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l-6 5 6 5"/></svg>
+        </button>
+      </div>
 
-      <!-- Transcript -->
-      <div class="transcript-wrap">
-        <div class="transcript-scroll" id="transcriptScroll">
-          <div class="turn" id="emptyState">
-            <div class="turn-head"><span class="who">Claudio</span> · now</div>
-            <div class="turn-body">
-              <span class="word future">Tell</span><span> </span>
-              <span class="word future">me</span><span> </span>
-              <span class="word future">what</span><span> </span>
-              <span class="word future">you're</span><span> </span>
-              <span class="word future">in</span><span> </span>
-              <span class="word future">the</span><span> </span>
-              <span class="word future">mood</span><span> </span>
-              <span class="word future">for.</span>
-            </div>
-          </div>
-          <div style="height:20px"></div>
+      <!-- Info panel wrapper: transparent in non-radio skins, right column in radio -->
+      <div class="radio-info-panel" id="radioInfoPanel">
+        <!-- Header (only shown in radio skin) -->
+        <div class="radio-info-header">
+          <span class="radio-info-dot" id="radioInfoDot"></span>
+          <span class="radio-info-label">Now Playing</span>
         </div>
-        <div class="transcript-fade"></div>
+
+        <!-- Meta (existing) -->
+        <div class="meta">
+          <div class="session-title" id="sessionTitle"></div>
+          <div class="meta-name" id="metaName">Your private<br>radio station</div>
+          <div class="meta-sub">
+            <span id="metaSub">Waiting for Claudio…</span>
+            <span class="meta-source" id="metaSource" style="display:none">
+              <svg width="11" height="11" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                <path d="M11.2 1.8v6.9c0 1.4-1 2.4-2.3 2.4-1.2 0-2.1-.8-2.1-1.9 0-1.1 1-1.9 2.1-1.9.4 0 .8.1 1.1.3V3.9L5.9 5.2v5.1c0 1.4-1 2.4-2.3 2.4-1.2 0-2.1-.8-2.1-1.9 0-1.1 1-1.9 2.1-1.9.4 0 .8.1 1.1.3V2.6l6.5-.8z"/>
+              </svg>
+              <span id="metaSourceText"></span>
+              <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 2h5v5"/><path d="M8 2L2.5 7.5"/>
+              </svg>
+            </span>
+          </div>
+        </div><!-- .meta -->
+
+        <!-- Transcript (existing) -->
+        <div class="transcript-wrap">
+          <div class="transcript-scroll" id="transcriptScroll">
+            <div class="turn" id="emptyState">
+              <div class="turn-head"><span class="who">Claudio</span> · now</div>
+              <div class="turn-body">
+                <span class="word future">Tell</span><span> </span>
+                <span class="word future">me</span><span> </span>
+                <span class="word future">what</span><span> </span>
+                <span class="word future">you're</span><span> </span>
+                <span class="word future">in</span><span> </span>
+                <span class="word future">the</span><span> </span>
+                <span class="word future">mood</span><span> </span>
+                <span class="word future">for.</span>
+              </div>
+            </div>
+            <div style="height:20px"></div>
+          </div>
+          <div class="transcript-fade"></div>
+        </div>
       </div>
 
       <!-- Main player: Music -->
@@ -955,6 +1138,8 @@ const transcriptScroll = document.getElementById('transcriptScroll');
 const radioPlayer = document.getElementById('radioPlayer');
 const radioFrame = document.getElementById('radioFrame');
 const radioStatus = document.getElementById('radioStatus');
+const radioInfoToggle = document.getElementById('radioInfoToggle');
+const radioInfoDot = document.getElementById('radioInfoDot');
 const chatBar    = document.getElementById('chatBar');
 const chatInput  = document.getElementById('chat-input');
 const chatSend   = document.getElementById('chat-send');
@@ -1322,10 +1507,29 @@ preloadRadioFrames();
 setRadioVisualState('idle');
 radioPlayer.addEventListener('click', handleRadioPlayerClick);
 
+/* ── Radio info panel toggle ──────────────────────────────────── */
+let radioInfoClosed = localStorage.getItem('claudio:radio-info-closed') === '1';
+
+function applyRadioInfoState() {
+  document.documentElement.classList.toggle('radio-info-closed', radioInfoClosed);
+  radioInfoToggle.setAttribute('aria-label', radioInfoClosed ? 'Show info panel' : 'Hide info panel');
+}
+
+function toggleRadioInfoPanel() {
+  radioInfoClosed = !radioInfoClosed;
+  localStorage.setItem('claudio:radio-info-closed', radioInfoClosed ? '1' : '0');
+  applyRadioInfoState();
+}
+
+radioInfoToggle.addEventListener('click', toggleRadioInfoPanel);
+applyRadioInfoState();
+
 /* ── Music player ─────────────────────────────────────────────────── */
 function setRadioStatus(status) {
   headerStatus.textContent = status;
-  dotLive.style.display = ['On Air', 'Speaking', 'Playing'].includes(status) ? '' : 'none';
+  const isLive = ['On Air', 'Speaking', 'Playing'].includes(status);
+  dotLive.style.display = isLive ? '' : 'none';
+  radioInfoDot.classList.toggle('live', isLive);
   window._setWavePlaying(['Speaking', 'Playing'].includes(status));
 }
 
