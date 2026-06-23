@@ -11,9 +11,43 @@ const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-6';
 async function generateJson(prompt, options = {}) {
   const provider = options.provider || DEFAULT_PROVIDER;
   if (provider === 'deepseek') return callDeepSeek(prompt, options);
+  if (provider === 'openai_compat') return callOpenAiCompat(prompt, options);
   if (provider === 'claude_api') return callClaudeApi(prompt, options);
   if (provider === 'claude_cli') return callClaudeCli(prompt, options);
   throw new Error(`Unsupported LLM_PROVIDER: ${provider}`);
+}
+
+async function callOpenAiCompat(prompt, options = {}) {
+  const apiKey = options.apiKey || process.env.OPENAI_COMPAT_API_KEY;
+  const baseURL = options.baseURL || process.env.OPENAI_COMPAT_BASE_URL;
+  const model = options.model || process.env.OPENAI_COMPAT_MODEL || 'claude-sonnet-4-6';
+
+  if (!apiKey) throw new Error('OPENAI_COMPAT_API_KEY not set');
+  if (!baseURL) throw new Error('OPENAI_COMPAT_BASE_URL not set');
+
+  const OpenAI = await loadOpenAI();
+  const client = new OpenAI({ baseURL, apiKey });
+  const startAt = Date.now();
+  console.log(`[LLM:openai_compat] 调用中，model ${model}，baseURL ${baseURL}，prompt ${prompt.length} 字符…`);
+
+  const completion = await withTimeout(
+    client.chat.completions.create({
+      model,
+      messages: [
+        { role: 'system', content: 'You are Claudio FM. Return strict JSON only.' },
+        { role: 'user', content: prompt },
+      ],
+      stream: false,
+    }),
+    options.timeoutMs || DEFAULT_TIMEOUT_MS,
+    `OpenAI-compat request timed out after ${Math.round((options.timeoutMs || DEFAULT_TIMEOUT_MS) / 1000)}s`
+  );
+
+  const elapsed = ((Date.now() - startAt) / 1000).toFixed(1);
+  const raw = completion.choices?.[0]?.message?.content?.trim() || '';
+  const parsed = parseResponse(raw);
+  logParsedResponse('openai_compat', elapsed, parsed, raw);
+  return parsed;
 }
 
 async function callDeepSeek(prompt, options = {}) {
