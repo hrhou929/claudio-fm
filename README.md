@@ -29,21 +29,13 @@ cd Claudio-FM
 npm install
 ```
 
-### 4. 配置 API Key
+### 4. 生成配置文件
 
 ```bash
 cp .env.example .env
 ```
 
-用文本编辑器打开 `.env`，填入你的 API Key：
-
-```
-OPENAI_COMPAT_API_KEY=你的_API_Key
-```
-
-> **API Key 从哪里获取？**
-> 推荐使用 [vveai.com](https://api.vveai.com) 或 [302.ai](https://302.ai) 等第三方 Claude API 代理平台，注册后即可获得 Key。
-> 同一个 Key 同时用于 LLM（DJ 策划）和 TTS（语音合成），无需额外配置。
+配置已内置，无需修改，直接下一步。
 
 ### 5. 启动
 
