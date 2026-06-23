@@ -106,12 +106,13 @@ async function ensureNeteaseLogin() {
   log(`cookie 来源: ${cookie ? '已有' : '无'}`);
 
   if (cookie) {
-    const st = await verifyCookieWithRetry(ns, cookie);
-    if (st.valid) { log(`已登录 UID ${st.userId}`); return; }
-    log('cookie 已失效，需重新登录');
+    // 有 cookie 就直接信任，不联网验证
+    // 联网验证容易因网络抖动误判为失效，导致每次启动都要重新扫码
+    log('已有 cookie，直接使用');
+    return;
   }
 
-  log('生成网易云二维码…');
+  log('无 cookie，生成网易云二维码…');
   let qr;
   try { qr = await ns.createQrLogin({ baseUrl: ns.neteaseBaseUrl() }); }
   catch (e) { throw new Error('连接网易云失败: ' + e.message); }
