@@ -125,13 +125,15 @@ async function ensureNeteaseLogin() {
       webPreferences: { nodeIntegration: false, contextIsolation: true },
     });
 
-    win.loadURL(`data:text/html;charset=utf-8,<!DOCTYPE html>
-<html lang="zh"><head><meta charset="utf-8">
+    // 把二维码页写到文件再加载，避免 data: URL 的 CSP 和编码问题
+    const qrHtmlPath = path.join(userData, 'qr-login.html');
+    fs.writeFileSync(qrHtmlPath, `<!DOCTYPE html>
+<html lang="zh"><head><meta charset="utf-8"><title>登录网易云音乐</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,sans-serif;display:flex;flex-direction:column;
-       align-items:center;justify-content:center;gap:16px;height:100vh;
-       background:#fff;padding:28px}
+  body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;
+       flex-direction:column;align-items:center;justify-content:center;
+       gap:16px;height:100vh;background:#fff;padding:28px}
   h2{font-size:17px;font-weight:600;color:#111}
   img{border-radius:12px;box-shadow:0 2px 20px rgba(0,0,0,.14)}
   p{font-size:13px;color:#888;text-align:center;line-height:1.6}
@@ -141,7 +143,8 @@ async function ensureNeteaseLogin() {
   <img src="${qr.qrImg}" width="180" height="180" alt="二维码">
   <p>用手机网易云 App 扫描上方二维码<br>然后点击<strong>确认登录</strong></p>
   <div id="status"></div>
-</body></html>`);
+</body></html>`, 'utf8');
+    win.loadFile(qrHtmlPath);
 
     const setStatus = msg =>
       win.webContents.executeJavaScript(
