@@ -242,6 +242,19 @@ function createMainWindow() {
     show: false,
   });
   mainWindow.loadURL(`http://localhost:${PORT}`);
+
+  // 注入拖拽区域：深色背景（.stage）可拖动，卡片和浮动按钮不受影响
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.insertCSS(`
+      .stage { -webkit-app-region: drag; }
+      .card, button, input, textarea, a, select,
+      .fav-panel, .fav-toggle, .chat-toggle, .chat-bar,
+      .tweaks-toggle, .tweaks, .fullscreen-toggle, .qr-modal {
+        -webkit-app-region: no-drag;
+      }
+    `).catch(() => {});
+  });
+
   mainWindow.once('ready-to-show', () => mainWindow.show());
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
