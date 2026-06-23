@@ -345,18 +345,18 @@ html, body {
 .fav-toggle:hover { color: rgb(255,255,255); transform: scale(1.06); }
 .fav-toggle.has-items { color: rgb(255,100,120); }
 
-/* ── 添加收藏浮动按钮（正在播放歌曲时显示）─────────────────────── */
+/* ── 添加收藏浮动按钮（始终显示）───────────────────────────────── */
 .add-fav-float {
   position: fixed; right: 16px; bottom: 120px;
   width: 40px; height: 40px; border-radius: 999px;
   background: rgba(20,20,22,.85); backdrop-filter: blur(20px);
   border: 1px solid rgba(255,255,255,.12);
-  color: rgba(255,255,255,.6);
-  display: none; place-items: center; cursor: pointer; z-index: 1001;
+  color: rgba(255,255,255,.45);
+  display: grid; place-items: center; cursor: pointer; z-index: 1001;
   box-shadow: rgba(0,0,0,.35) 0 8px 20px;
   transition: color .2s, background .2s, transform .15s;
 }
-.add-fav-float.visible { display: grid; }
+.add-fav-float.playing { color: rgba(255,255,255,.75); }
 .add-fav-float.active  { color: rgb(255,100,120); }
 .add-fav-float:hover   { transform: scale(1.06); background: rgba(30,30,34,.9); }
 .add-fav-float svg     { width: 16px; height: 16px; }
@@ -2624,8 +2624,13 @@ async function renderFavs() {
 }
 
 async function updateFavBtn() {
-  if (!currentFavTrack) { addFavFloat.classList.remove('visible'); return; }
-  addFavFloat.classList.add('visible');
+  const playing = !!currentFavTrack;
+  addFavFloat.classList.toggle('playing', playing);
+  if (!playing) {
+    addFavFloat.classList.remove('active');
+    addFavFloat.querySelector('svg').setAttribute('fill', 'none');
+    return;
+  }
   const favs = _favsCache.length ? _favsCache : await apiFavs();
   const saved = favs.some(f => f.title === currentFavTrack.title && f.artist === currentFavTrack.artist);
   addFavFloat.classList.toggle('active', saved);
