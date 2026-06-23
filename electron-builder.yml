@@ -1,6 +1,8 @@
 appId: com.claudio.fm
 productName: Claudio FM
-main: electron/main.js
+
+extraMetadata:
+  main: electron/main.js
 
 directories:
   output: dist-electron
