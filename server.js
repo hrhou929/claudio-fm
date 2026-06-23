@@ -391,7 +391,7 @@ async function resolveRequestedTracks(requestedTracks, options = {}) {
         query,
         title: track.title || requested.title || query,
         artist: track.artist || requested.artist || '',
-        streamUrl: track.streamUrl,
+        streamUrl: storeMusicUrl(track.streamUrl),  // 通过本地代理，避免 CDN 直访问题
       };
       const skip = shouldSkipTrack(payloadTrack, avoidState);
       if (skip.skip) {
@@ -783,6 +783,41 @@ app.get('/api/tts/:filename', (req, res) => {
   const file = path.join(TTS_SERVE_DIR, req.params.filename);
   if (!fs.existsSync(file)) return res.status(404).end();
   res.sendFile(file);
+});
+
+// ── 音乐代理（解决浏览器直接访问 Netease CDN 被拦截的问题）────────────────────
+const musicUrlCache = new Map(); // token → { url, expiresAt }
+function storeMusicUrl(url) {
+  const token = require('crypto').randomBytes(8).toString('hex');
+  musicUrlCache.set(token, { url, expiresAt: Date.now() + 3600_000 });
+  // 清理过期 token
+  for (const [k, v] of musicUrlCache) {
+    if (v.expiresAt < Date.now()) musicUrlCache.delete(k);
+  }
+  return `/api/music/stream/${token}`;
+}
+
+app.get('/api/music/stream/:token', (req, res) => {
+  const entry = musicUrlCache.get(req.params.token);
+  if (!entry) return res.status(404).end();
+  const https = require('https');
+  const http = require('http');
+  const targetUrl = new URL(entry.url);
+  const lib = targetUrl.protocol === 'https:' ? https : http;
+  const proxyReq = lib.request(
+    { hostname: targetUrl.hostname, path: targetUrl.pathname + targetUrl.search,
+      headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://music.163.com/' } },
+    proxyRes => {
+      res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'audio/mpeg');
+      if (proxyRes.headers['content-length']) res.setHeader('Content-Length', proxyRes.headers['content-length']);
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.statusCode = proxyRes.statusCode;
+      proxyRes.pipe(res);
+    }
+  );
+  proxyReq.on('error', e => { console.error('[music-proxy]', e.message); res.status(502).end(); });
+  req.on('close', () => proxyReq.destroy());
+  proxyReq.end();
 });
 
 // ── 收藏列表（持久化到文件）──────────────────────────────────────────────────
