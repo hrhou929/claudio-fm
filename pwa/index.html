@@ -1990,6 +1990,7 @@ replayBtn.addEventListener('click', () => {
 let queue = [], queueIdx = 0;
 let autoRefilling = false;
 let segueStarted = false;     // the DJ already spoke over the current song's outro
+let pendingTrackAfterSpeech = null; // track to play once the current TTS sequence finishes
 let scriptSegments = [];
 let handledSegmentIds = new Set();
 let programClockStartedAt = null;
@@ -2055,7 +2056,14 @@ function speakSegmentSequence(segments, onEnd) {
   function playOne() {
     const segment = pending.shift();
     if (!segment) {
-      if (onEnd) onEnd();
+      if (onEnd) {
+        onEnd();
+      } else if (pendingTrackAfterSpeech) {
+        // playNext set this when the outro started mid-song; play the awaited track now.
+        const track = pendingTrackAfterSpeech;
+        pendingTrackAfterSpeech = null;
+        playTrack(track);
+      }
       return;
     }
     speakSegmentObject(segment, playOne);
@@ -2064,13 +2072,22 @@ function speakSegmentSequence(segments, onEnd) {
 }
 
 function speakSegment(transcript, ttsUrl, onEnd) {
+  const wrappedOnEnd = () => {
+    if (onEnd) {
+      onEnd();
+    } else if (pendingTrackAfterSpeech) {
+      const track = pendingTrackAfterSpeech;
+      pendingTrackAfterSpeech = null;
+      playTrack(track);
+    }
+  };
   speakSegmentObject({
     id: `legacy_${Date.now()}`,
     type: 'quick_touch',
     position: 'immediate',
     text: transcript,
     ttsUrl,
-  }, onEnd);
+  }, wrappedOnEnd);
 }
 
 function isOutroWindowOpen() {
@@ -2081,7 +2098,10 @@ function isOutroWindowOpen() {
 }
 
 // Called in the last seconds of a song: bring the DJ in over the fade, like real radio.
-function maybeStartOutroTalk() {
+// onEnd is called after all seam speech finishes; pass it from playNext so the next track
+// starts only after the voice sequence completes, preventing playTrack from racing with
+// the ttsAudio.ended callbacks inside speakSegmentSequence.
+function maybeStartOutroTalk(onEnd) {
   if (segueStarted) return;
   if (!ttsAudio.paused && !ttsAudio.ended) return; // already talking
   if (!isOutroWindowOpen()) return;
@@ -2093,7 +2113,7 @@ function maybeStartOutroTalk() {
   );
   if (seamSegments.length) {
     segueStarted = true;
-    speakSegmentSequence(seamSegments);
+    speakSegmentSequence(seamSegments, onEnd);
     return;
   }
 
@@ -2101,7 +2121,7 @@ function maybeStartOutroTalk() {
     const next = queue[queueIdx + 1];
     if (next && next.introTtsUrl) {
       segueStarted = true;
-      speakSegment(next.introTranscript, next.introTtsUrl);
+      speakSegment(next.introTranscript, next.introTtsUrl, onEnd);
       return;
     }
   }
@@ -2112,7 +2132,7 @@ function maybeStartOutroTalk() {
   );
   if (pendingComments.length) {
     segueStarted = true;
-    speakSegmentSequence(pendingComments);
+    speakSegmentSequence(pendingComments, onEnd);
   }
 }
 
@@ -2204,10 +2224,13 @@ function playNext() {
       segment.trackIndex === queueIdx
     );
     if (spokenDuringOutro) {
-      // Claudio already talked over the outro. If still talking, let the track follow the voice.
+      // Claudio already started talking over the outro. If still speaking, register the
+      // next track in pendingTrackAfterSpeech so speakSegmentSequence plays it when done,
+      // instead of adding a second ttsAudio.ended listener that races with speakSegmentObject.
       if (!ttsAudio.paused && !ttsAudio.ended) {
-        ttsAudio.addEventListener('ended', () => playTrack(track), { once: true });
+        pendingTrackAfterSpeech = track;
       } else {
+        // Voice finished before the song ended (very short outro window). Play now.
         playTrack(track);
       }
     } else if (beforeTrackSegments.length) {
