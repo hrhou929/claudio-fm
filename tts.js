@@ -3,7 +3,7 @@ const path = require('path');
 const crypto = require('crypto');
 const https = require('https');
 
-const CACHE_DIR = path.join(__dirname, 'cache/tts');
+const CACHE_DIR = process.env.TTS_CACHE_DIR || path.join(__dirname, 'cache/tts');
 fs.mkdirSync(CACHE_DIR, { recursive: true });
 
 const VOLCENGINE_DEFAULT_ENDPOINT = 'https://openspeech.bytedance.com/api/v3/tts/unidirectional';

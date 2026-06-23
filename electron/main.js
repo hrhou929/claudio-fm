@@ -10,7 +10,12 @@ const fs = require('fs');
 const appRoot = app.isPackaged
   ? path.join(process.resourcesPath, 'app')
   : path.join(__dirname, '..');
+
 require('dotenv').config({ path: path.join(appRoot, '.env') });
+
+// 网易云数据目录写到用户目录（asar 里无法写入）
+const neteaseDataDir = path.join(app.getPath('userData'), 'netease');
+fs.mkdirSync(neteaseDataDir, { recursive: true });
 
 const PORT = parseInt(process.env.CLAUDIO_PORT || '8888', 10);
 const SERVER_URL = `http://localhost:${PORT}`;
@@ -20,9 +25,19 @@ let mainWindow = null;
 // ── 启动 Node.js 后端 ─────────────────────────────────────────────
 function startServer() {
   const startScript = path.join(appRoot, 'scripts', 'start.js');
+  const neteaseAppJs = path.join(appRoot, 'node_modules', 'NeteaseCloudMusicApi', 'app.js');
   serverProcess = spawn(process.execPath, [startScript], {
     cwd: appRoot,
-    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+    env: {
+      ...process.env,
+      ELECTRON_RUN_AS_NODE: '1',
+      // 让 netease sidecar 也用 Electron 内置 Node，无需系统 node
+      NETEASE_SIDECAR_COMMAND: process.execPath,
+      NETEASE_SIDECAR_ARGS: neteaseAppJs,
+      // 网易云数据目录 & TTS 缓存目录重定向到可写路径
+      NETEASE_DATA_DIR: neteaseDataDir,
+      TTS_CACHE_DIR: path.join(app.getPath('userData'), 'tts-cache'),
+    },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 

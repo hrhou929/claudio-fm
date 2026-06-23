@@ -6,7 +6,7 @@ const DEFAULT_NETEASE_BASE = 'http://127.0.0.1:3000';
 const DEFAULT_REQUEST_TIMEOUT_MS = 8000;
 const DEFAULT_LOGIN_TIMEOUT_MS = 180000;
 
-const DATA_DIR = path.join(__dirname, 'data', 'netease');
+const DATA_DIR = process.env.NETEASE_DATA_DIR || path.join(__dirname, 'data', 'netease');
 const LOCAL_CONFIG_PATH = path.join(DATA_DIR, 'local.config.json');
 const QR_LOGIN_PATH = path.join(DATA_DIR, 'qr-login.html');
 

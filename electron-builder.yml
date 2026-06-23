@@ -1,5 +1,6 @@
 appId: com.claudio.fm
 productName: Claudio FM
+asar: false
 
 extraMetadata:
   main: electron/main.js
