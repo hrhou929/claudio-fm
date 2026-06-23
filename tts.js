@@ -39,6 +39,8 @@ function synthesize(text, options = {}) {
     promise = synthesizeEdgeTts(text, cached, options);
   } else if (provider === 'openai_tts') {
     promise = synthesizeOpenAiTts(text, cached, options);
+  } else if (provider === 'doubao') {
+    promise = synthesizeDoubao(text, cached, options);
   } else {
     promise = synthesizeKokoro(text, cached, options);
   }
@@ -54,6 +56,7 @@ function getVoiceForProvider(provider, options = {}) {
   if (provider === 'volcengine') return options.voiceType || process.env.VOLCENGINE_TTS_VOICE_TYPE || '';
   if (provider === 'edge-tts') return options.voice || process.env.EDGE_TTS_VOICE || 'zh-CN-XiaoxiaoNeural';
   if (provider === 'openai_tts') return options.voice || process.env.OPENAI_TTS_VOICE || 'nova';
+  if (provider === 'doubao') return options.voice || process.env.DOUBAO_VOICE || 'zh_female_wanwanxiaohe_moon_bigtts';
   return options.voice || process.env.KOKORO_VOICE || '';
 }
 
@@ -258,6 +261,35 @@ async function synthesizeOpenAiTts(text, outPath, options = {}) {
   if (!res.ok) {
     const err = await res.text().catch(() => '');
     throw new Error(`OpenAI TTS error ${res.status}: ${err}`);
+  }
+
+  const buffer = Buffer.from(await res.arrayBuffer());
+  fs.writeFileSync(outPath, buffer);
+  return outPath;
+}
+
+// 豆包 TTS（字节跳动）— 豆包 API 与 OpenAI TTS 格式兼容
+async function synthesizeDoubao(text, outPath, options = {}) {
+  const apiKey  = options.apiKey  || process.env.OPENAI_COMPAT_API_KEY;
+  const baseURL = (options.baseURL || process.env.DOUBAO_BASE_URL || process.env.OPENAI_COMPAT_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3').replace(/\/+$/, '');
+  const voice   = options.voice   || process.env.DOUBAO_VOICE   || 'zh_female_wanwanxiaohe_moon_bigtts';
+  const model   = options.model   || process.env.DOUBAO_MODEL   || 'doubao-tts-hd';
+  const speed   = Number(options.speed || process.env.DOUBAO_SPEED || 0.9);
+
+  if (!apiKey) throw new Error('OPENAI_COMPAT_API_KEY not set');
+
+  const res = await fetch(`${baseURL}/audio/speech`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ model, input: text, voice, speed, response_format: 'mp3' }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text().catch(() => '');
+    throw new Error(`豆包 TTS 错误 ${res.status}: ${err}`);
   }
 
   const buffer = Buffer.from(await res.arrayBuffer());
