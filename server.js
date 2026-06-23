@@ -778,8 +778,9 @@ app.post('/api/tts/caller', async (req, res) => {
 });
 
 // Serve cached TTS files
+const TTS_SERVE_DIR = process.env.TTS_CACHE_DIR || path.join(__dirname, 'cache/tts');
 app.get('/api/tts/:filename', (req, res) => {
-  const file = path.join(__dirname, 'cache/tts', req.params.filename);
+  const file = path.join(TTS_SERVE_DIR, req.params.filename);
   if (!fs.existsSync(file)) return res.status(404).end();
   res.sendFile(file);
 });
