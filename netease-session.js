@@ -287,4 +287,6 @@ module.exports = {
   resolveCookie,
   verifyLoginStatus,
   writeLocalConfig,
+  createQrLogin,
+  pollQrLogin,
 };
