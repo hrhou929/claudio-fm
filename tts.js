@@ -37,6 +37,8 @@ function synthesize(text, options = {}) {
     promise = synthesizeFish(text, cached, options);
   } else if (provider === 'edge-tts') {
     promise = synthesizeEdgeTts(text, cached, options);
+  } else if (provider === 'openai_tts') {
+    promise = synthesizeOpenAiTts(text, cached, options);
   } else {
     promise = synthesizeKokoro(text, cached, options);
   }
@@ -51,6 +53,7 @@ function getVoiceForProvider(provider, options = {}) {
   if (provider === 'fish') return options.voiceId || process.env.FISH_VOICE_ID || '';
   if (provider === 'volcengine') return options.voiceType || process.env.VOLCENGINE_TTS_VOICE_TYPE || '';
   if (provider === 'edge-tts') return options.voice || process.env.EDGE_TTS_VOICE || 'zh-CN-XiaoxiaoNeural';
+  if (provider === 'openai_tts') return options.voice || process.env.OPENAI_TTS_VOICE || 'nova';
   return options.voice || process.env.KOKORO_VOICE || '';
 }
 
@@ -232,6 +235,34 @@ function synthesizeFish(text, outPath, options = {}) {
     req.write(body);
     req.end();
   });
+}
+
+async function synthesizeOpenAiTts(text, outPath, options = {}) {
+  const apiKey = options.apiKey || process.env.OPENAI_COMPAT_API_KEY;
+  const baseURL = (options.baseURL || process.env.OPENAI_COMPAT_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
+  const voice = options.voice || process.env.OPENAI_TTS_VOICE || 'shimmer';
+  const model = options.ttsModel || process.env.OPENAI_TTS_MODEL || 'tts-1-hd';
+  const speed = Number(options.speed || process.env.OPENAI_TTS_SPEED || 0.85);
+
+  if (!apiKey) throw new Error('OPENAI_COMPAT_API_KEY not set');
+
+  const res = await fetch(`${baseURL}/audio/speech`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ model, input: text, voice, speed, response_format: 'mp3' }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text().catch(() => '');
+    throw new Error(`OpenAI TTS error ${res.status}: ${err}`);
+  }
+
+  const buffer = Buffer.from(await res.arrayBuffer());
+  fs.writeFileSync(outPath, buffer);
+  return outPath;
 }
 
 async function synthesizeEdgeTts(text, outPath, options = {}) {

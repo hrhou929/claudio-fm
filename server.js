@@ -783,7 +783,22 @@ app.get('/api/tts/:filename', (req, res) => {
 // ── Boot ─────────────────────────────────────────────────────────────────────
 scheduler.init(broadcast, runRadioSegment);
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.CLAUDIO_PORT || 8080;
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.warn(`[电台] 端口 ${PORT} 被占用，尝试释放并重试…`);
+    const { execSync } = require('child_process');
+    try {
+      execSync(`lsof -ti :${PORT} | xargs kill -9`, { stdio: 'ignore' });
+    } catch {}
+    setTimeout(() => server.listen(PORT, () => {
+      console.log(`\n[电台] Claudio FM 启动 → http://localhost:${PORT}`);
+      console.log(`[电台] 等待调度器或用户触发…\n`);
+    }), 500);
+  } else {
+    throw err;
+  }
+});
 server.listen(PORT, () => {
   console.log(`\n[电台] Claudio FM 启动 → http://localhost:${PORT}`);
   console.log(`[电台] 等待调度器或用户触发…\n`);
