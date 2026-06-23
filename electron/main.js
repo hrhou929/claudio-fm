@@ -40,7 +40,7 @@ const NETEASE_URL = `http://127.0.0.1:${NETEASE_PORT}`;
 let neteaseProc = null;
 let mainWindow  = null;
 
-// ── HTTP 轮询 ──────────────────────────────────────────────────────
+// ── HTTP 轮询（通用）──────────────────────────────────────────────
 function pollUrl(url, maxMs = 45000) {
   return new Promise((resolve, reject) => {
     const start = Date.now();
@@ -53,6 +53,41 @@ function pollUrl(url, maxMs = 45000) {
     }
     check();
   });
+}
+
+// ── 等待 NeteaseCloudMusicApi 完全就绪（轮询 /inner/version）───────
+// 根路径有响应≠API 就绪，必须用 /inner/version 确认
+function waitForNeteaseReady(maxMs = 30000) {
+  const url = NETEASE_URL.replace(/\/$/, '') + '/inner/version';
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    function check() {
+      const req = http.request(url, { method: 'POST' }, res => {
+        res.resume();
+        if (res.statusCode < 500) resolve();
+        else if (Date.now() - start > maxMs) reject(new Error('网易云服务启动超时'));
+        else setTimeout(check, 800);
+      });
+      req.on('error', () => {
+        if (Date.now() - start > maxMs) return reject(new Error('网易云服务启动超时'));
+        setTimeout(check, 800);
+      });
+      req.end('{}');
+    }
+    check();
+  });
+}
+
+// ── 带重试的 verifyLoginStatus ─────────────────────────────────────
+// 启动后 API 可能还在热身，最多重试 3 次（间隔 1.5s）
+async function verifyCookieWithRetry(neteaseSessionModule, cookie, maxRetries = 3) {
+  const { verifyLoginStatus, neteaseBaseUrl } = neteaseSessionModule;
+  for (let i = 0; i < maxRetries; i++) {
+    const st = await verifyLoginStatus({ baseUrl: neteaseBaseUrl(), cookie });
+    if (st.valid) return st;
+    if (i < maxRetries - 1) await new Promise(r => setTimeout(r, 1500));
+  }
+  return { valid: false };
 }
 
 // ── 启动 NeteaseCloudMusicApi 子进程 ──────────────────────────────
@@ -76,10 +111,11 @@ async function ensureNeteaseLogin() {
     createQrLogin, requestNeteaseJson, writeLocalConfig,
   } = require(path.join(appRoot, 'netease-session'));
 
-  // 已有 cookie，验证是否有效
+  // 已有 cookie，验证是否有效（带重试，防止 API 刚启动时报错）
   const { cookie } = resolveCookie();
   if (cookie) {
-    const st = await verifyLoginStatus({ baseUrl: neteaseBaseUrl(), cookie });
+    const ns = require(path.join(appRoot, 'netease-session'));
+    const st = await verifyCookieWithRetry(ns, cookie);
     if (st.valid) { console.log(`[electron] 已登录网易云 UID ${st.userId}`); return; }
     console.log('[electron] cookie 已失效，重新登录');
   }
@@ -231,10 +267,10 @@ app.whenReady().then(async () => {
   const splash = createSplash();
 
   try {
-    // 1. 启动 NeteaseCloudMusicApi
+    // 1. 启动 NeteaseCloudMusicApi，等 /inner/version 真正就绪
     setSplashMsg(splash, '正在启动网易云服务…');
     startNetease();
-    await pollUrl(NETEASE_URL, 30000);
+    await waitForNeteaseReady(30000);
     console.log('[electron] 网易云服务就绪');
 
     // 2. 检查 / 完成网易云登录
