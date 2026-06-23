@@ -345,6 +345,41 @@ html, body {
 .fav-toggle:hover { color: rgb(255,255,255); transform: scale(1.06); }
 .fav-toggle.has-items { color: rgb(255,100,120); }
 
+/* ── Switch account button ───────────────────────────────────────── */
+.switch-account-btn {
+  font-size: 12px; font-weight: 500; padding: 5px 12px;
+  border-radius: 6px; border: 1px solid rgba(0,0,0,.15);
+  background: rgb(240,240,242); color: rgb(60,60,70);
+  cursor: pointer; transition: background .15s;
+}
+.switch-account-btn:hover { background: rgb(228,228,232); }
+
+/* ── QR Modal ────────────────────────────────────────────────────── */
+.qr-modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,.55);
+  backdrop-filter: blur(6px); display: none;
+  place-items: center; z-index: 200;
+}
+.qr-modal.open { display: grid; }
+.qr-modal-box {
+  background: rgb(255,255,255); border-radius: 20px;
+  padding: 28px 32px; display: flex; flex-direction: column;
+  align-items: center; gap: 16px;
+  box-shadow: rgba(0,0,0,.3) 0 20px 60px -10px;
+  min-width: 260px;
+}
+.qr-modal-title {
+  font-size: 15px; font-weight: 600; color: rgb(17,17,17);
+}
+.qr-modal-status {
+  font-size: 12px; color: rgb(120,120,130); text-align: center;
+}
+.qr-modal-close {
+  font-size: 13px; color: rgb(140,140,150); background: none;
+  border: none; cursor: pointer; padding: 4px 8px;
+}
+.qr-modal-close:hover { color: rgb(60,60,70); }
+
 /* ── Radio homepage player ───────────────────────────────────────── */
 .radio-home {
   display: none;
@@ -1254,6 +1289,22 @@ html, body {
   <div class="tweak-row">
     <label>Violet hue <span id="lblVioletHue">330°</span></label>
     <input type="range" id="inVioletHue" min="240" max="360" value="330">
+  </div>
+  <div class="tweak-row" style="border-top:1px solid rgba(0,0,0,.06);padding-top:12px;margin-top:4px">
+    <label id="neteaseAccountLabel">网易云账号</label>
+    <button class="switch-account-btn" id="switchAccountBtn">切换账号</button>
+  </div>
+</div>
+
+<!-- 网易云二维码弹窗 -->
+<div class="qr-modal" id="qrModal">
+  <div class="qr-modal-box">
+    <div class="qr-modal-title">扫码切换网易云账号</div>
+    <div class="qr-modal-img" id="qrImgWrap">
+      <img id="qrImg" src="" alt="QR Code" style="width:180px;height:180px;border-radius:8px">
+    </div>
+    <div class="qr-modal-status" id="qrStatus">用网易云 App 扫描上方二维码</div>
+    <button class="qr-modal-close" id="qrClose">取消</button>
   </div>
 </div>
 
@@ -2430,6 +2481,84 @@ function handleWsMessage(msg) {
 }
 
 connectWS();
+
+/* ── Netease 账号切换 ─────────────────────────────────────────────── */
+const qrModal      = document.getElementById('qrModal');
+const qrImg        = document.getElementById('qrImg');
+const qrStatus     = document.getElementById('qrStatus');
+const qrClose      = document.getElementById('qrClose');
+const switchAccountBtn = document.getElementById('switchAccountBtn');
+const neteaseAccountLabel = document.getElementById('neteaseAccountLabel');
+let qrPollTimer = null;
+
+async function refreshNeteaseStatus() {
+  try {
+    const r = await fetch('/api/netease/status');
+    const d = await r.json();
+    neteaseAccountLabel.textContent = d.loggedIn
+      ? `网易云账号（已登录 UID ${d.userId}）`
+      : '网易云账号（未登录）';
+  } catch {}
+}
+
+async function openQrModal() {
+  qrStatus.textContent = '正在生成二维码…';
+  qrImg.src = '';
+  qrModal.classList.add('open');
+
+  try {
+    const r = await fetch('/api/netease/qr');
+    const d = await r.json();
+    if (!d.qrImg) throw new Error('无法生成二维码');
+    qrImg.src = d.qrImg;
+    qrStatus.textContent = '用网易云 App 扫描上方二维码';
+    startQrPoll(d.key);
+  } catch (err) {
+    qrStatus.textContent = '生成失败：' + err.message;
+  }
+}
+
+function startQrPoll(key) {
+  clearInterval(qrPollTimer);
+  qrPollTimer = setInterval(async () => {
+    try {
+      const r = await fetch(`/api/netease/qr/check?key=${key}`);
+      const d = await r.json();
+      if (d.status === 'scanning') {
+        qrStatus.textContent = '已扫码，请在手机上确认登录…';
+      } else if (d.status === 'success') {
+        clearInterval(qrPollTimer);
+        qrStatus.textContent = '登录成功！';
+        setTimeout(() => {
+          qrModal.classList.remove('open');
+          refreshNeteaseStatus();
+        }, 1200);
+      } else if (d.status === 'expired') {
+        clearInterval(qrPollTimer);
+        qrStatus.textContent = '二维码已过期，请重新点击切换账号';
+      }
+    } catch {}
+  }, 2500);
+}
+
+switchAccountBtn.addEventListener('click', async () => {
+  await fetch('/api/netease/logout', { method: 'POST' });
+  openQrModal();
+});
+
+qrClose.addEventListener('click', () => {
+  clearInterval(qrPollTimer);
+  qrModal.classList.remove('open');
+});
+
+qrModal.addEventListener('click', e => {
+  if (e.target === qrModal) {
+    clearInterval(qrPollTimer);
+    qrModal.classList.remove('open');
+  }
+});
+
+refreshNeteaseStatus();
 
 /* ── Favorites ────────────────────────────────────────────────────── */
 const favBtn    = document.getElementById('favBtn');

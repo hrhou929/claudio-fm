@@ -12,6 +12,10 @@ const { synthesize } = require('./tts');
 const { getTrack } = require('./music');
 const { addPlay, addMessage, recentPlays, getPref } = require('./state');
 const scheduler = require('./scheduler');
+const {
+  createQrLogin, requestNeteaseJson, writeLocalConfig,
+  neteaseBaseUrl, verifyLoginStatus, resolveCookie,
+} = require('./netease-session');
 
 const app = express();
 const server = http.createServer(app);
@@ -778,6 +782,51 @@ app.get('/api/tts/:filename', (req, res) => {
   const file = path.join(__dirname, 'cache/tts', req.params.filename);
   if (!fs.existsSync(file)) return res.status(404).end();
   res.sendFile(file);
+});
+
+// ── Netease 账号管理 ──────────────────────────────────────────────────────────
+app.get('/api/netease/status', async (req, res) => {
+  const { cookie } = resolveCookie();
+  if (!cookie) return res.json({ loggedIn: false });
+  const status = await verifyLoginStatus({ baseUrl: neteaseBaseUrl(), cookie });
+  res.json({ loggedIn: status.valid, userId: status.userId });
+});
+
+app.get('/api/netease/qr', async (req, res) => {
+  try {
+    const qr = await createQrLogin({ baseUrl: neteaseBaseUrl() });
+    res.json({ key: qr.key, qrImg: qr.qrImg, qrUrl: qr.qrUrl });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/netease/qr/check', async (req, res) => {
+  const { key } = req.query;
+  if (!key) return res.status(400).json({ error: 'key required' });
+  try {
+    const state = await requestNeteaseJson('/login/qr/check', { key }, {
+      baseUrl: neteaseBaseUrl(), withCookie: false,
+    });
+    const code = Number(state?.code);
+    if (code === 803 && state.cookie) {
+      writeLocalConfig({ cookie: state.cookie, source: 'qr-login' });
+      res.json({ status: 'success' });
+    } else if (code === 800) {
+      res.json({ status: 'expired' });
+    } else if (code === 802) {
+      res.json({ status: 'scanning' });
+    } else {
+      res.json({ status: 'waiting' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/netease/logout', (req, res) => {
+  writeLocalConfig({ cookie: '' });
+  res.json({ ok: true });
 });
 
 // ── Boot ─────────────────────────────────────────────────────────────────────

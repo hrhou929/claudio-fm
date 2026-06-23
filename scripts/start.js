@@ -1,3 +1,33 @@
+/* ── 自动安装缺少的 npm 依赖（仅使用 Node 内置模块）──────────────── */
+(function ensureDeps() {
+  const fs = require('fs');
+  const path = require('path');
+  const { spawnSync } = require('child_process');
+
+  const root = path.join(__dirname, '..');
+  const pkgPath = path.join(root, 'package.json');
+  if (!fs.existsSync(pkgPath)) return;
+
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+  const allDeps = Object.keys({ ...pkg.dependencies, ...pkg.devDependencies });
+
+  const missing = allDeps.filter(dep => {
+    const modPath = path.join(root, 'node_modules', dep);
+    return !fs.existsSync(modPath);
+  });
+
+  if (missing.length === 0) return;
+
+  console.log(`[start] 检测到 ${missing.length} 个缺少的依赖，正在自动安装：${missing.join(', ')}`);
+  const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  const result = spawnSync(npm, ['install'], { cwd: root, stdio: 'inherit' });
+  if (result.status !== 0) {
+    console.error('[start] npm install 失败，请手动运行 npm install 后重试');
+    process.exit(1);
+  }
+  console.log('[start] 依赖安装完成 ✓');
+})();
+
 require('dotenv').config();
 
 const { spawn } = require('child_process');
