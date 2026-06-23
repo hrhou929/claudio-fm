@@ -2496,7 +2496,7 @@ async function refreshNeteaseStatus() {
     const r = await fetch('/api/netease/status');
     const d = await r.json();
     neteaseAccountLabel.textContent = d.loggedIn
-      ? `网易云账号（已登录 UID ${d.userId}）`
+      ? '网易云账号（已登录）'
       : '网易云账号（未登录）';
   } catch {}
 }

@@ -786,11 +786,10 @@ app.get('/api/tts/:filename', (req, res) => {
 });
 
 // ── Netease 账号管理 ──────────────────────────────────────────────────────────
-app.get('/api/netease/status', async (req, res) => {
-  const { cookie } = resolveCookie();
-  if (!cookie) return res.json({ loggedIn: false });
-  const status = await verifyLoginStatus({ baseUrl: neteaseBaseUrl(), cookie });
-  res.json({ loggedIn: status.valid, userId: status.userId });
+app.get('/api/netease/status', (req, res) => {
+  // 只检查本地 cookie 是否存在，不联网验证（避免网络抖动误判为未登录）
+  const { cookie, cookieSource } = resolveCookie();
+  res.json({ loggedIn: !!cookie, source: cookieSource });
 });
 
 app.get('/api/netease/qr', async (req, res) => {
