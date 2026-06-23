@@ -2422,7 +2422,14 @@ function handleWsMessage(msg) {
       segment.position === 'immediate' ||
       (segment.position === 'before_track' && (segment.trackIndex ?? 0) === queueIdx)
     );
-    if (immediateSegments.length) speakSegmentSequence(immediateSegments);
+    if (immediateSegments.length) {
+      // TTS 播完后，确保音乐真的在播放（enqueueAndPlay 里 play() 可能已异步失败）
+      speakSegmentSequence(immediateSegments, () => {
+        if ((musicAudio.paused || !musicAudio.currentSrc) && queue.length > queueIdx) {
+          playTrack(queue[queueIdx]);
+        }
+      });
+    }
     return;
   }
 
@@ -2493,8 +2500,13 @@ function handleWsMessage(msg) {
         segment.position === 'immediate' ||
         (segment.position === 'before_track' && (segment.trackIndex ?? 0) === queueIdx)
       );
-      if (immediateSegments.length) speakSegmentSequence(immediateSegments);
-      else if (msg.status === 'speaking') setRadioStatus('Speaking');
+      if (immediateSegments.length) {
+        speakSegmentSequence(immediateSegments, () => {
+          if ((musicAudio.paused || !musicAudio.currentSrc) && queue.length > queueIdx) {
+            playTrack(queue[queueIdx]);
+          }
+        });
+      } else if (msg.status === 'speaking') setRadioStatus('Speaking');
     }
   }
 
