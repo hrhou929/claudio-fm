@@ -13,7 +13,7 @@ html, body {
   font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
-  background: rgb(3,18,40);
+  background: rgb(8,35,70);
   color: rgb(17,17,17);
 }
 * { box-sizing: border-box; }
@@ -23,7 +23,7 @@ html, body {
   position: fixed; inset: 0;
   display: grid; place-items: center;
   overflow: hidden;
-  background: radial-gradient(rgb(5,28,58) 0%, rgb(3,17,38) 60%, rgb(1,10,24) 100%);
+  background: radial-gradient(rgb(10,45,90) 0%, rgb(6,28,62) 60%, rgb(3,16,40) 100%);
 }
 
 /* ── Fluid blobs ─────────────────────────────────────────────────── */
@@ -332,7 +332,7 @@ html, body {
 }
 
 .fav-toggle {
-  position: fixed; right: 16px; bottom: 16px;
+  position: fixed; right: 16px; bottom: 68px;
   width: 42px; height: 42px; border-radius: 50%;
   background: rgba(4,28,58,0.88); backdrop-filter: blur(16px);
   border: 1px solid rgba(255,255,255,.12);
@@ -344,6 +344,22 @@ html, body {
 }
 .fav-toggle:hover { color: rgb(255,255,255); transform: scale(1.06); }
 .fav-toggle.has-items { color: rgb(255,100,120); }
+
+/* ── 添加收藏浮动按钮（正在播放歌曲时显示）─────────────────────── */
+.add-fav-float {
+  position: fixed; right: 16px; bottom: 120px;
+  width: 40px; height: 40px; border-radius: 999px;
+  background: rgba(20,20,22,.85); backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,.12);
+  color: rgba(255,255,255,.6);
+  display: none; place-items: center; cursor: pointer; z-index: 1001;
+  box-shadow: rgba(0,0,0,.35) 0 8px 20px;
+  transition: color .2s, background .2s, transform .15s;
+}
+.add-fav-float.visible { display: grid; }
+.add-fav-float.active  { color: rgb(255,100,120); }
+.add-fav-float:hover   { transform: scale(1.06); background: rgba(30,30,34,.9); }
+.add-fav-float svg     { width: 16px; height: 16px; }
 
 /* ── Switch account button ───────────────────────────────────────── */
 .switch-account-btn {
@@ -430,7 +446,7 @@ html, body {
 .tweaks-toggle:hover { transform: scale(1.05); background: rgba(30,30,34,.9); }
 .tweaks-toggle svg { width: 18px; height: 18px; }
 .tweaks {
-  position: fixed; right: 16px; bottom: 68px; width: 280px;
+  position: fixed; right: 16px; bottom: 172px; width: 280px;
   background: rgba(20,20,22,.92); backdrop-filter: blur(20px);
   border: 1px solid rgba(255,255,255,.08); border-radius: 16px;
   padding: 14px 16px; color: rgb(255,255,255); font-size: 13px;
@@ -1129,11 +1145,7 @@ html, body {
           <div class="meta-name" id="metaName">Your private radio station</div>
           <div class="meta-sub">
             <span id="metaSub">Waiting for Claudio…</span>
-            <button class="fav-btn" id="favBtn" aria-label="收藏当前歌曲" title="收藏" style="display:none">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-            </button>
+            <!-- 收藏按钮已移到右侧浮动按钮区 -->
             <span class="meta-source" id="metaSource" style="display:none">
               <svg width="11" height="11" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
                 <path d="M11.2 1.8v6.9c0 1.4-1 2.4-2.3 2.4-1.2 0-2.1-.8-2.1-1.9 0-1.1 1-1.9 2.1-1.9.4 0 .8.1 1.1.3V3.9L5.9 5.2v5.1c0 1.4-1 2.4-2.3 2.4-1.2 0-2.1-.8-2.1-1.9 0-1.1 1-1.9 2.1-1.9.4 0 .8.1 1.1.3V2.6l6.5-.8z"/>
@@ -1197,6 +1209,13 @@ html, body {
   </div>
 </div>
 
+<!-- 添加收藏浮动按钮（正在播放时显示）-->
+<button class="add-fav-float" id="addFavFloat" aria-label="添加收藏" title="添加收藏">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+  </svg>
+</button>
+
 <!-- Favorites toggle -->
 <button class="fav-toggle" id="favToggle" aria-label="收藏列表" title="收藏列表">
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1250,44 +1269,53 @@ html, body {
   </svg>
 </button>
 <div class="tweaks" id="tweaks">
-  <h3>Tweaks</h3>
+  <h3>设置</h3>
   <div class="tweak-row">
-    <label>Skin</label>
-    <div class="segmented" id="skinControl" role="group" aria-label="Skin">
-      <button type="button" data-skin-name="default" aria-pressed="true">Cosmic</button>
-      <button type="button" data-skin-name="glass" aria-pressed="false">Glass</button>
-      <button type="button" data-skin-name="radio" aria-pressed="false">Radio</button>
+    <label>皮肤</label>
+    <div class="segmented" id="skinControl" role="group" aria-label="皮肤">
+      <button type="button" data-skin-name="default" aria-pressed="true">宇宙</button>
+      <button type="button" data-skin-name="glass" aria-pressed="false">玻璃</button>
+      <button type="button" data-skin-name="radio" aria-pressed="false">电台</button>
     </div>
   </div>
   <div class="tweak-row">
-    <label>DJ language</label>
-    <div class="segmented" id="djLanguageControl" role="group" aria-label="DJ language">
-      <button type="button" data-lang="en" aria-pressed="true">English</button>
+    <label>DJ 语言</label>
+    <div class="segmented" id="djLanguageControl" role="group" aria-label="DJ 语言">
+      <button type="button" data-lang="en" aria-pressed="true">英文</button>
       <button type="button" data-lang="zh" aria-pressed="false">中文</button>
     </div>
   </div>
   <div class="tweak-row">
-    <label>DJ volume <span id="lblDjVolume">100%</span></label>
+    <label>DJ 音量 <span id="lblDjVolume">100%</span></label>
     <input type="range" id="inDjVolume" min="0" max="100" value="100">
   </div>
   <div class="tweak-row">
-    <label>Music volume <span id="lblMusicVolume">100%</span></label>
+    <label>音乐音量 <span id="lblMusicVolume">100%</span></label>
     <input type="range" id="inMusicVolume" min="0" max="100" value="100">
   </div>
   <div class="tweak-row">
-    <label>Header tone</label>
+    <label>顶部配色</label>
     <div class="swatches" id="swatches">
-      <div class="swatch active" data-bg="linear-gradient(rgb(12,12,14) 0%, rgb(22,22,26) 100%)" style="background:rgb(12,12,14)"></div>
-      <div class="swatch" data-bg="linear-gradient(rgb(11,18,32) 0%, rgb(18,28,50) 100%)" style="background:rgb(11,18,32)"></div>
-      <div class="swatch" data-bg="linear-gradient(rgb(26,15,30) 0%, rgb(38,22,44) 100%)" style="background:rgb(26,15,30)"></div>
+      <!-- 黑色 -->
+      <div class="swatch active" title="黑色"
+        data-bg="linear-gradient(rgb(10,10,12) 0%, rgb(20,20,22) 100%)"
+        style="background:rgb(10,10,12)"></div>
+      <!-- 深蓝色 -->
+      <div class="swatch" title="深蓝色"
+        data-bg="linear-gradient(rgb(4,14,40) 0%, rgb(8,24,64) 100%)"
+        style="background:rgb(4,14,40)"></div>
+      <!-- 墨绿色 -->
+      <div class="swatch" title="墨绿色"
+        data-bg="linear-gradient(rgb(4,24,12) 0%, rgb(8,40,20) 100%)"
+        style="background:rgb(4,24,12)"></div>
     </div>
   </div>
   <div class="tweak-row">
-    <label>Blue hue <span id="lblBlueHue">256°</span></label>
+    <label>蓝色调 <span id="lblBlueHue">256°</span></label>
     <input type="range" id="inBlueHue" min="180" max="320" value="256">
   </div>
   <div class="tweak-row">
-    <label>Violet hue <span id="lblVioletHue">330°</span></label>
+    <label>紫色调 <span id="lblVioletHue">330°</span></label>
     <input type="range" id="inVioletHue" min="240" max="360" value="330">
   </div>
   <div class="tweak-row" style="border-top:1px solid rgba(0,0,0,.06);padding-top:12px;margin-top:4px">
@@ -2560,23 +2588,23 @@ qrModal.addEventListener('click', e => {
 
 refreshNeteaseStatus();
 
-/* ── Favorites ────────────────────────────────────────────────────── */
-const favBtn    = document.getElementById('favBtn');
-const favPanel  = document.getElementById('favPanel');
-const favToggle = document.getElementById('favToggle');
-const favList   = document.getElementById('favList');
-const favClear  = document.getElementById('favClear');
+/* ── Favorites（服务端持久化，重启不丢失）────────────────────────── */
+const addFavFloat = document.getElementById('addFavFloat');
+const favPanel    = document.getElementById('favPanel');
+const favToggle   = document.getElementById('favToggle');
+const favList     = document.getElementById('favList');
+const favClear    = document.getElementById('favClear');
 let currentFavTrack = null;
+let _favsCache = [];
 
-function loadFavs() {
-  try { return JSON.parse(localStorage.getItem('claudio_favs') || '[]'); } catch { return []; }
-}
-function saveFavs(favs) {
-  localStorage.setItem('claudio_favs', JSON.stringify(favs));
+async function apiFavs() {
+  try { const r = await fetch('/api/favorites'); _favsCache = await r.json(); }
+  catch { _favsCache = []; }
+  return _favsCache;
 }
 
-function renderFavs() {
-  const favs = loadFavs();
+async function renderFavs() {
+  const favs = await apiFavs();
   favToggle.classList.toggle('has-items', favs.length > 0);
   if (!favs.length) {
     favList.innerHTML = '<div class="fav-empty">还没有收藏的歌曲</div>';
@@ -2589,41 +2617,49 @@ function renderFavs() {
     </div>`).join('');
   favList.querySelectorAll('.fav-item').forEach(el => {
     el.addEventListener('click', () => {
-      const f = loadFavs()[+el.dataset.index];
+      const f = _favsCache[+el.dataset.index];
       if (f) requestChat(`播放 ${f.title}${f.artist ? ' - ' + f.artist : ''}`);
     });
   });
 }
 
-function updateFavBtn() {
-  if (!currentFavTrack) { favBtn.style.display = 'none'; return; }
-  favBtn.style.display = '';
-  const favs = loadFavs();
+async function updateFavBtn() {
+  if (!currentFavTrack) { addFavFloat.classList.remove('visible'); return; }
+  addFavFloat.classList.add('visible');
+  const favs = _favsCache.length ? _favsCache : await apiFavs();
   const saved = favs.some(f => f.title === currentFavTrack.title && f.artist === currentFavTrack.artist);
-  favBtn.classList.toggle('active', saved);
-  favBtn.querySelector('svg').setAttribute('fill', saved ? 'currentColor' : 'none');
+  addFavFloat.classList.toggle('active', saved);
+  addFavFloat.querySelector('svg').setAttribute('fill', saved ? 'currentColor' : 'none');
 }
 
-favBtn.addEventListener('click', () => {
+addFavFloat.addEventListener('click', async () => {
   if (!currentFavTrack) return;
-  let favs = loadFavs();
-  const idx = favs.findIndex(f => f.title === currentFavTrack.title && f.artist === currentFavTrack.artist);
-  if (idx >= 0) { favs.splice(idx, 1); }
-  else { favs.unshift({ title: currentFavTrack.title, artist: currentFavTrack.artist, addedAt: Date.now() }); }
-  saveFavs(favs);
+  const { title, artist } = currentFavTrack;
+  const saved = _favsCache.some(f => f.title === title && f.artist === artist);
+  if (saved) {
+    await fetch('/api/favorites', { method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, artist }) });
+  } else {
+    await fetch('/api/favorites', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, artist }) });
+  }
+  await renderFavs();
   updateFavBtn();
-  renderFavs();
 });
 
 favToggle.addEventListener('click', e => {
   e.stopPropagation();
   favPanel.classList.toggle('open');
+  if (favPanel.classList.contains('open')) renderFavs();
 });
 
-favClear.addEventListener('click', e => {
+favClear.addEventListener('click', async e => {
   e.stopPropagation();
-  saveFavs([]);
-  renderFavs();
+  await fetch('/api/favorites', { method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' }, body: '{}' });
+  await renderFavs();
   updateFavBtn();
 });
 

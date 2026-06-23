@@ -785,6 +785,43 @@ app.get('/api/tts/:filename', (req, res) => {
   res.sendFile(file);
 });
 
+// ── 收藏列表（持久化到文件）──────────────────────────────────────────────────
+const CLAUDIO_DATA_DIR = process.env.CLAUDIO_DB_PATH
+  ? path.dirname(process.env.CLAUDIO_DB_PATH)   // Electron: userData/
+  : path.join(__dirname, 'data');                // 终端模式: data/
+const FAVS_PATH = path.join(CLAUDIO_DATA_DIR, 'favorites.json');
+
+function readFavs() {
+  try { return JSON.parse(fs.readFileSync(FAVS_PATH, 'utf8')); } catch { return []; }
+}
+function writeFavs(favs) {
+  fs.mkdirSync(CLAUDIO_DATA_DIR, { recursive: true });
+  fs.writeFileSync(FAVS_PATH, JSON.stringify(favs, null, 2));
+}
+
+app.get('/api/favorites', (req, res) => res.json(readFavs()));
+
+app.post('/api/favorites', (req, res) => {
+  const { title, artist } = req.body;
+  if (!title) return res.status(400).json({ error: 'title required' });
+  const favs = readFavs();
+  if (!favs.find(f => f.title === title && f.artist === (artist || ''))) {
+    favs.unshift({ title, artist: artist || '', addedAt: Date.now() });
+    writeFavs(favs);
+  }
+  res.json({ ok: true, favs });
+});
+
+app.delete('/api/favorites', (req, res) => {
+  const { title, artist } = req.body || {};
+  if (title) {
+    writeFavs(readFavs().filter(f => !(f.title === title && f.artist === (artist || ''))));
+  } else {
+    writeFavs([]);
+  }
+  res.json({ ok: true });
+});
+
 // ── Netease 账号管理 ──────────────────────────────────────────────────────────
 app.get('/api/netease/status', (req, res) => {
   // 只检查本地 cookie 是否存在，不联网验证（避免网络抖动误判为未登录）
