@@ -8,7 +8,13 @@
     "start": "node scripts/start.js",
     "start:server": "node server.js",
     "netease:check": "node scripts/netease-status.js",
-    "netease:login": "node scripts/netease-login.js"
+    "netease:login": "node scripts/netease-login.js",
+    "electron:dev": "electron electron/main.js",
+    "electron:build": "electron-builder --mac --config electron-builder.yml"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",

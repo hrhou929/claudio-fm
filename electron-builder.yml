@@ -1,0 +1,52 @@
+appId: com.claudio.fm
+productName: Claudio FM
+main: electron/main.js
+
+directories:
+  output: dist-electron
+  buildResources: build
+
+files:
+  - .env
+  - electron/**/*
+  - server.js
+  - router.js
+  - scheduler.js
+  - state.js
+  - context.js
+  - claude.js
+  - llm.js
+  - tts.js
+  - music.js
+  - music-netease.js
+  - music-yt-dlp.js
+  - netease-session.js
+  - scripts/**/*
+  - prompts/**/*
+  - pwa/**/*
+  - assets/**/*
+  - user/**/*
+  - node_modules/**/*
+  - "!node_modules/.cache/**/*"
+  - "!node_modules/**/*.md"
+
+asarUnpack:
+  - node_modules/better-sqlite3/**/*
+  - node_modules/NeteaseCloudMusicApi/**/*
+
+mac:
+  category: public.app-category.music
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+
+dmg:
+  title: Claudio FM
+  contents:
+    - x: 410
+      y: 150
+      type: link
+      path: /Applications
+    - x: 130
+      y: 150
+      type: file
