@@ -6,10 +6,12 @@ const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek
 const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash';
 const DEEPSEEK_REASONING_EFFORT = process.env.DEEPSEEK_REASONING_EFFORT || '';
 const DEEPSEEK_THINKING = process.env.DEEPSEEK_THINKING || '';
+const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-6';
 
 async function generateJson(prompt, options = {}) {
   const provider = options.provider || DEFAULT_PROVIDER;
   if (provider === 'deepseek') return callDeepSeek(prompt, options);
+  if (provider === 'claude_api') return callClaudeApi(prompt, options);
   if (provider === 'claude_cli') return callClaudeCli(prompt, options);
   throw new Error(`Unsupported LLM_PROVIDER: ${provider}`);
 }
@@ -49,6 +51,44 @@ async function callDeepSeek(prompt, options = {}) {
   const parsed = parseResponse(raw);
   logParsedResponse('deepseek', elapsed, parsed, raw);
   return parsed;
+}
+
+async function callClaudeApi(prompt, options = {}) {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY not set');
+  }
+
+  const Anthropic = await loadAnthropic();
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const model = options.model || CLAUDE_MODEL;
+  const startAt = Date.now();
+  console.log(`[LLM:claude_api] 调用中，model ${model}，prompt ${prompt.length} 字符…`);
+
+  const message = await withTimeout(
+    client.messages.create({
+      model,
+      max_tokens: 2048,
+      system: 'You are Claudio FM. Return strict JSON only.',
+      messages: [{ role: 'user', content: prompt }],
+    }),
+    options.timeoutMs || DEFAULT_TIMEOUT_MS,
+    `Claude API request timed out after ${Math.round((options.timeoutMs || DEFAULT_TIMEOUT_MS) / 1000)}s`
+  );
+
+  const elapsed = ((Date.now() - startAt) / 1000).toFixed(1);
+  const raw = message.content?.[0]?.text?.trim() || '';
+  const parsed = parseResponse(raw);
+  logParsedResponse('claude_api', elapsed, parsed, raw);
+  return parsed;
+}
+
+async function loadAnthropic() {
+  try {
+    const mod = await import('@anthropic-ai/sdk');
+    return mod.default || mod.Anthropic || mod;
+  } catch (err) {
+    throw new Error('Anthropic SDK not installed. Run `yarn add @anthropic-ai/sdk`.');
+  }
 }
 
 async function loadOpenAI() {

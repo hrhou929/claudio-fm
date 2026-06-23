@@ -35,6 +35,8 @@ function synthesize(text, options = {}) {
     promise = synthesizeVolcengine(text, cached, options);
   } else if (provider === 'fish') {
     promise = synthesizeFish(text, cached, options);
+  } else if (provider === 'edge-tts') {
+    promise = synthesizeEdgeTts(text, cached, options);
   } else {
     promise = synthesizeKokoro(text, cached, options);
   }
@@ -48,6 +50,7 @@ function synthesize(text, options = {}) {
 function getVoiceForProvider(provider, options = {}) {
   if (provider === 'fish') return options.voiceId || process.env.FISH_VOICE_ID || '';
   if (provider === 'volcengine') return options.voiceType || process.env.VOLCENGINE_TTS_VOICE_TYPE || '';
+  if (provider === 'edge-tts') return options.voice || process.env.EDGE_TTS_VOICE || 'zh-CN-XiaoxiaoNeural';
   return options.voice || process.env.KOKORO_VOICE || '';
 }
 
@@ -228,6 +231,30 @@ function synthesizeFish(text, outPath, options = {}) {
     req.on('error', reject);
     req.write(body);
     req.end();
+  });
+}
+
+async function synthesizeEdgeTts(text, outPath, options = {}) {
+  const voice = options.voice || process.env.EDGE_TTS_VOICE || 'zh-CN-XiaoxiaoNeural';
+
+  let MsEdgeTTS, OUTPUT_FORMAT;
+  try {
+    ({ MsEdgeTTS, OUTPUT_FORMAT } = require('msedge-tts'));
+  } catch {
+    throw new Error('msedge-tts not installed. Run `yarn add msedge-tts`.');
+  }
+
+  const tts = new MsEdgeTTS();
+  await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
+  const readable = tts.toStream(text);
+
+  return new Promise((resolve, reject) => {
+    const ws = fs.createWriteStream(outPath);
+    readable.on('data', chunk => ws.write(chunk));
+    readable.on('end', () => ws.end());
+    readable.on('error', reject);
+    ws.on('finish', () => resolve(outPath));
+    ws.on('error', reject);
   });
 }
 
