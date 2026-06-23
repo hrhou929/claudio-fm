@@ -191,4 +191,4 @@ npm install --registry=https://registry.npmmirror.com
 
 ## 项目来源
 
-Fork 自 [bingyanglu/Claudio-FM](https://github.com/bingyanglu/Claudio-FM)，创意来自抖音博主 **mmguo**。
+Fork 自 [bingyanglu/Claudio-FM](https://github.com/bingyanglu/Claudio-FM)，创意来自博主 **mmguo**。
